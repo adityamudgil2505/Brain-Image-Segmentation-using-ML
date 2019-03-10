@@ -1,1 +1,2 @@
 # Brain-Image-Segmentation-using-ML
+The goal of this project is to develop segmentation methods to fragment features of the brain like white matter, tumor etc in 3D, based on ML techniques, which require no human intervention and are robust to the low quality of medical images, with user friendly GUI for showing annotations, developed in Python using open-source ML libraries. Standard data-sets can be used for training, validation and testing purposes.
