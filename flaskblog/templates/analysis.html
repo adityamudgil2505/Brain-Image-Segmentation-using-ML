@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+    <div class="dropdown">
+      <form action="" method="post">
+        <legend class="mb-1">Select frame number</legend>
+          <input class="input-group" type="number" max="47" min="0" name="SlideNo" value="{{z_index}}">
+          <br>
+        <legend class="mb-1">Select particular Class </legend>
+        <div class="input-group">
+          <select class=" custom-select " type="button" data-toggle="dropdown" aria-haspopup="true" name="files_dropdown" method="GET" action="/">
+              <option class="dropdown-item" value= "0" selected="selected">Combined</option>
+              <option class="dropdown-item" value= "1" >Cortical gray matter</option>
+              <option class="dropdown-item" value= "2" >Basal ganglia</option>
+              <option class="dropdown-item" value= "3" >White matter</option>
+              <option class="dropdown-item" value= "4" >White matter lesions</option>
+              <option class="dropdown-item" value= "5" >Cerebrospinal fluid in the extracerebral space</option>
+              <option class="dropdown-item" value= "6" >Ventricles</option>
+              <option class="dropdown-item" value= "7" >Cerebellum</option>
+              <option class="dropdown-item" value= "8" >Brain stem</option>
+          </select>
+          <div class="input-group-append">
+              <input class="btn btn-outline-primary" type = "submit"/>
+          </div>
+        </div>
+      </form>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col-8">
+            <p>Y_Pred</p>
+            <img src="../static/mri/y_Pred/{{file}}_my_{{z_index}}.png" width="400" height="400" alt="Select Constraints">
+        </div>
+        <div class="col-3">
+            <p>Y_True</p>
+            <img src="../static/mri/y_True/y_True.png" width="400" height="400" alt="You haven't give y_True file">
+        </div>
+    </div>
+{% endblock %}

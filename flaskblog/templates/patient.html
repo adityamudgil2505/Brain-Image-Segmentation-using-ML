@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="jumbotron jumbotron-fluid">
+          <div class="container ml-3">
+            <h1 class="ml-6 border-bottom mb-4" style="font-weight: normal">Patient Info</h1><br>
+            <span>Patient Name:- </span> <span style="font-size:30px; font-weight: bold;">{{patient.first_name}}  {{patient.last_name}}</span>
+            <br>
+            <span>Age:- </span> <span style="font-size:25px;">{{patient.age}} yrs</span>
+            <br>
+            <span>Gender:- </span> <span style="font-size:25px">{{patient.gender}}</span>
+              <br>
+              <br>
+             <span>Download Previous uploaded file </span> <br>
+            <a href="{{ url_for('DownloadFileT1',path=patient.file_t1) }}"><button type="button" class="btn btn-info" >Download T1 file</button></a>
+            <a href="{{ url_for('DownloadFileFLAIR',path=patient.file_flair) }}"><button type="button" class="btn btn-info" >Download FLAIR file</button></a>
+            <a href="{{ url_for('DownloadFileIR',path=patient.file_ir) }}"><button type="button" class="btn btn-info" >Download IR file</button></a>
+            <a href="{{ url_for('DownloadFileYTrue',path=patient.file_y_true) }}"><button type="button" class="btn btn-info" >Download y_True file</button></a>
+            <br><br>
+            <span>Test on our Model</span><br>
+            <a href="{{ url_for('analysis')}}"><button type="button" class="btn btn-primary" >Make Prediction</button></a>
+          </div>
+    </div>
+{% endblock content %}
