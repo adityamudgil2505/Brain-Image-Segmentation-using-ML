@@ -17,7 +17,7 @@
             <a href="{{ url_for('DownloadFileYTrue',path=patient.file_y_true) }}"><button type="button" class="btn btn-info" >Download y_True file</button></a>
             <br><br>
             <span>Test on our Model</span><br>
-            <a href="{{ url_for('analysis')}}"><button type="button" class="btn btn-primary" >Make Prediction</button></a>
+            <a href="{{ url_for('analysis', filename=patient.last_name+patient.first_name)}}"><button type="button" class="btn btn-primary" >Make Prediction</button></a>
           </div>
     </div>
 {% endblock content %}

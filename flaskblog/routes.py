@@ -7,6 +7,28 @@ from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, AddP
 from flaskblog.models import User, Patient
 from flask_login import login_user, current_user, logout_user, login_required
 import numpy as np
+from flaskblog.utils.losses import *
+from flaskblog.utils.preprocess import *
+from keras.models import load_model
+
+def predict(T1_path,FLAIR_path,IR_path,label):
+    model = load_model("flaskblog/weights/label"+str(label)+"/best.h5",custom_objects={'dice_coefficient': dice_coefficient, 'dice_loss':  dice_loss})
+    if label in [1,3,5]:
+        T1 = get_data_with_skull_scraping(T1_path)
+        if label == 5:
+            X = np.array((T1>=10) & (T1<110)).astype(np.uint8)[None,None,...]
+        elif label == 3:
+            X = np.array(T1>=150).astype(np.uint8)[None,None,...]
+        else:
+            X = np.array((T1>=80) & (T1<160)).astype(np.uint8)[None,None,...]
+        y_pred = model.predict(X)
+    else:
+        T1 = histeq(to_uint8(get_data_with_skull_scraping(T1_path)))[None,None,...]
+        IR = IR_to_uint8(get_data(IR_path))[None,None,...]
+        FLAIR = to_uint8(get_data(FLAIR_path))[None,None,...]
+        y_pred = model.predict([T1,FLAIR,IR])
+    return y_pred.squeeze()
+
 
 @app.route("/")
 @app.route("/home")
@@ -88,7 +110,7 @@ def account():
 
 def save_file_T1(form_picture,last_name, first_name):
     _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = last_name + first_name + f_ext
+    picture_fn = last_name + first_name + ".nii.gz"
     picture_path = os.path.join(app.root_path, 'static/mri/T1', picture_fn)
     f = request.files.getlist('file_T1')[0]
     f.save(picture_path)
@@ -96,7 +118,7 @@ def save_file_T1(form_picture,last_name, first_name):
 
 def save_file_FLAIR(form_picture,last_name, first_name):
     _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = last_name + first_name + f_ext
+    picture_fn = last_name + first_name + ".nii.gz"
     picture_path = os.path.join(app.root_path, 'static/mri/FLAIR', picture_fn)
     f = request.files.getlist('file_FLAIR')[0]
     f.save(picture_path)
@@ -105,7 +127,7 @@ def save_file_FLAIR(form_picture,last_name, first_name):
 
 def save_file_IR(form_picture,last_name, first_name):
     _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = last_name + first_name + f_ext
+    picture_fn = last_name + first_name + ".nii.gz"
     picture_path = os.path.join(app.root_path, 'static/mri/IR', picture_fn)
     f = request.files.getlist('file_IR')[0]
     f.save(picture_path)
@@ -114,7 +136,7 @@ def save_file_IR(form_picture,last_name, first_name):
 
 def save_file_y_True(form_picture,last_name, first_name):
     _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = last_name + first_name + f_ext
+    picture_fn = last_name + first_name + ".nii.gz"
     picture_path = os.path.join(app.root_path, 'static/mri/y_True', picture_fn)
     f = request.files.getlist('file_y_True')[0]
     f.save(picture_path)
@@ -200,40 +222,31 @@ def DownloadFileYTrue (path = None):
 
 
 # pragma table_info(patient)
-@app.route("/classML/<string:filename>", methods=['GET', 'POST'])
-def classML (filename=None):
-    if request.method == 'POST':
-        file = request.form.get('files_dropdown')
-        path_T1 = './flaskblog/static/mri/T1/'+filename + '.jpg'
-        path_FLAIR = './flaskblog/static/mri/FLAIR/' + filename +'.jpg'
-        path_IR = './flaskblog/static/mri/IR/' + filename +'.jpg'
-        # file is the name of class
-        print(file)
-        print(path_T1)
-        print(path_FLAIR)
-        print(path_IR)
-        try:
-            y_pred_1, y_pred_2, y_pred_3, y_pred_4, y_pred_5, y_pred_6, y_pred_7, y_pred_8 = getMlOutput(path_T1, path_FLAIR, path_IR)
-            success = True
-            error = None
-        except Exception as e:
-            success = False
-            error = str(e)
 
-        return render_template('analyze.html', title='Results', success=success,
-                               error=error, folder=app.config["UPLOAD_FOLDER"])
-    return render_template('analysis.html')
+t1_path_base = "flaskblog/static/mri/T1/"
+flair_path_base = "flaskblog/static/mri/FLAIR/"
+ir_path_base = "flaskblog/static/mri/IR/"
+y_true_base = "flaskblog/static/mri/y_True/"
+y_pred_base = "flaskblog/static/mri/y_Pred/"
 
 
-def practice(z_index, class_index):
-    path = 'flaskblog/static/mri/y_Pred/'+class_index+'_my_' + z_index + '.png'
-    x = np.load('./flaskblog/numpyArray.npy')
+def practice(z_index, class_index, filename):
+    path_pred = 'flaskblog/static/mri/y_Pred/'+class_index+'_my_' + z_index + '.png'
+    path_true = 'flaskblog/static/mri/y_True/'+class_index+'_my_' + z_index + '.png'
+    x = np.load(y_pred_base+str(class_index)+".npy")
+    z = np.array(x[:,:,int(z_index)]>0.5).astype(np.uint8())
+    img = Image.fromarray(np.uint8(z*255),'L')
+    img.save(path_pred)
+    x = np.load("flaskblog/static/mri/y_True/"+filename+".npy")
+    if class_index !=0:
+    	x = np.array(x==int(class_index)).astype(np.uint8()).squeeze()
     z = x[:,:,int(z_index)]
     img = Image.fromarray(np.uint8(z*255),'L')
-    img.save(path)
+    img.save(path_true)
 
-@app.route("/analysis", methods=['GET', 'POST'])
-def analysis():
+
+@app.route("/analysis/<string:filename>", methods=['GET', 'POST'])
+def analysis(filename=None):
     z_index = 0
     file = 1
     if request.method == 'POST':
@@ -241,6 +254,40 @@ def analysis():
             file = request.form.get('files_dropdown')
         if request.form["SlideNo"]:
             z_index = request.form["SlideNo"]
-        practice(z_index, file)
+
+        practice(z_index, file, filename)
+    else:
+        y_pred = []
+        THRESHOLD = 0.5
+        for i in range(1,9):
+            y_ = predict(t1_path_base+filename+".nii.gz",flair_path_base+filename+".nii.gz",ir_path_base+filename+".nii.gz",i)
+            y_pred.append(y_)
+            np.save(y_pred_base+str(i)+".npy",y_)
+        y_1 = np.array(y_pred[0] > THRESHOLD)*1
+        y_2 = np.array(y_pred[1] > THRESHOLD)*2
+        y_3 = np.array(y_pred[2] > THRESHOLD)*3
+        y_4 = np.array(y_pred[3] > THRESHOLD)*4
+        y_5 = np.array(y_pred[4] > THRESHOLD)*5
+        y_6 = np.array(y_pred[5] > THRESHOLD)*6
+        y_7 = np.array(y_pred[6] > THRESHOLD)*7
+        y_8 = np.array(y_pred[7] > THRESHOLD)*8
+        idx = []
+        idx.append(np.array(np.where(y_1 == 1)))
+        idx.append(np.array(np.where(y_2 == 2)))
+        idx.append(np.array(np.where(y_3 == 3)))
+        idx.append(np.array(np.where(y_4 == 4)))
+        idx.append(np.array(np.where(y_5 == 5)))
+        idx.append(np.array(np.where(y_6 == 6)))
+        idx.append(np.array(np.where(y_7 == 7)))
+        idx.append(np.array(np.where(y_8 == 8)))
+        y_final = np.zeros([240,240,48],dtype='int')
+        for i in range(8):
+            for j in range(idx[i].shape[1]):
+                x = idx[i][0][j]
+                y = idx[i][1][j]
+                z = idx[i][2][j]
+                y_final[x][y][z] = i+1
+        np.save(y_pred_base+str(0)+".npy",y_final)
+        np.save("flaskblog/static/mri/y_True/"+filename+".npy",get_data(y_true_base+filename+".nii.gz"))
         # return redirect(url_for('analysis'), z_index = z_index)
     return render_template('analysis.html', z_index = z_index, file=file)

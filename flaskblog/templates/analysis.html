@@ -10,7 +10,7 @@
         <legend class="mb-1">Select particular Class </legend>
         <div class="input-group">
           <select class=" custom-select " type="button" data-toggle="dropdown" aria-haspopup="true" name="files_dropdown" method="GET" action="/">
-              <option class="dropdown-item" value= "0" selected="selected">Combined</option>
+              <!-- <option class="dropdown-item" value= "0" selected="selected">Combined</option> -->
               <option class="dropdown-item" value= "1" >Cortical gray matter</option>
               <option class="dropdown-item" value= "2" >Basal ganglia</option>
               <option class="dropdown-item" value= "3" >White matter</option>
@@ -34,7 +34,7 @@
         </div>
         <div class="col-3">
             <p>Y_True</p>
-            <img src="../static/mri/y_True/y_True.png" width="400" height="400" alt="You haven't give y_True file">
+            <img src="../static/mri/y_True/{{file}}_my_{{z_index}}.png" width="400" height="400" alt="You haven't give y_True file">
         </div>
     </div>
 {% endblock %}
